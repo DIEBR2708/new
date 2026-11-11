@@ -38,6 +38,7 @@ for (const o of objects) {
 }
 
 const enableBtn = document.getElementById('enable');
+const recenterBtn = document.getElementById('recenter');
 let orientationEnabled = false;
 let deviceAlpha = 0;
 let deviceBeta = 0;
@@ -47,6 +48,8 @@ const zee = new THREE.Vector3(0, 0, 1);
 const euler = new THREE.Euler();
 const q0 = new THREE.Quaternion();
 const q1 = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
+const qDevice = new THREE.Quaternion();
+const qRefInv = new THREE.Quaternion(); // identity until Recenter
 
 function screenOrientationRad() {
   const angle = (screen.orientation && typeof screen.orientation.angle === 'number')
@@ -55,17 +58,30 @@ function screenOrientationRad() {
   return THREE.MathUtils.degToRad(angle);
 }
 
-function applyDeviceOrientation() {
+function deviceQuaternionInto(target) {
   const alpha = THREE.MathUtils.degToRad(deviceAlpha);
   const beta = THREE.MathUtils.degToRad(deviceBeta);
   const gamma = THREE.MathUtils.degToRad(deviceGamma);
   const orient = screenOrientationRad();
 
   euler.set(beta, alpha, -gamma, 'YXZ');
-  camera.quaternion.setFromEuler(euler);
-  camera.quaternion.multiply(q1);
-  camera.quaternion.multiply(q0.setFromAxisAngle(zee, -orient));
+  target.setFromEuler(euler);
+  target.multiply(q1);
+  target.multiply(q0.setFromAxisAngle(zee, -orient));
 }
+
+function applyDeviceOrientation() {
+  deviceQuaternionInto(qDevice);
+  camera.quaternion.copy(qRefInv).multiply(qDevice);
+}
+
+function recenter() {
+  deviceQuaternionInto(qDevice);
+  qRefInv.copy(qDevice).invert();
+  applyDeviceOrientation();
+}
+
+recenterBtn.addEventListener('click', recenter);
 
 function onDeviceOrientation(event) {
   if (event.alpha == null || event.beta == null || event.gamma == null) return;
