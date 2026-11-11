@@ -3,35 +3,66 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="screen-orientation" content="landscape" />
+  <meta name="x5-orientation" content="landscape" />
   <title>Phone Look</title>
   <style>
-    html, body { margin: 0; height: 100%; overflow: hidden; background: #111; }
-    canvas { display: block; width: 100%; height: 100%; }
-    #enable {
-      position: fixed;
-      inset: 0;
-      display: none;
-      align-items: center;
-      justify-content: center;
-      background: rgba(0, 0, 0, 0.55);
-      color: #fff;
-      font: 18px/1.3 sans-serif;
-      border: 0;
-      cursor: pointer;
-      z-index: 2;
+    html, body {
+      margin: 0;
+      height: 100%;
+      overflow: hidden;
+      background: #111;
+      touch-action: none;
     }
+    canvas { display: block; width: 100%; height: 100%; }
+
+    /* Landscape-first chrome: right-edge thumb reach when phone is held sideways */
     #recenter {
       position: fixed;
-      left: 16px;
-      bottom: 16px;
+      right: max(16px, env(safe-area-inset-right));
+      top: 50%;
+      transform: translateY(-50%);
       z-index: 1;
-      padding: 10px 14px;
+      padding: 12px 16px;
       border: 0;
       border-radius: 8px;
       background: rgba(0, 0, 0, 0.55);
       color: #fff;
       font: 15px/1.2 sans-serif;
       cursor: pointer;
+    }
+
+    /* Wide horizontal enable affordance for landscape hold */
+    #enable {
+      position: fixed;
+      left: max(24px, env(safe-area-inset-left));
+      right: max(24px, env(safe-area-inset-right));
+      top: 50%;
+      transform: translateY(-50%);
+      height: min(88px, 28vh);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      background: rgba(0, 0, 0, 0.7);
+      color: #fff;
+      font: 18px/1.3 sans-serif;
+      border: 0;
+      border-radius: 10px;
+      cursor: pointer;
+      z-index: 2;
+      padding: 0 24px;
+    }
+
+    @media (orientation: portrait) {
+      /* Still prefer landscape chrome; keep controls usable until lock/rotate */
+      #enable {
+        left: 12%;
+        right: 12%;
+        height: min(96px, 22vh);
+      }
+      #recenter {
+        right: max(12px, env(safe-area-inset-right));
+      }
     }
   </style>
 </head>

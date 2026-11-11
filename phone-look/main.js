@@ -51,6 +51,18 @@ const q1 = new THREE.Quaternion(-Math.SQRT1_2, 0, 0, Math.SQRT1_2);
 const qDevice = new THREE.Quaternion();
 const qRefInv = new THREE.Quaternion(); // identity until Recenter
 
+async function preferLandscape() {
+  try {
+    if (screen.orientation && typeof screen.orientation.lock === 'function') {
+      await screen.orientation.lock('landscape');
+    }
+  } catch (_) {
+    // Browser may require fullscreen or deny lock; CSS still prefers landscape.
+  }
+}
+
+preferLandscape();
+
 function screenOrientationRad() {
   const angle = (screen.orientation && typeof screen.orientation.angle === 'number')
     ? screen.orientation.angle
@@ -76,6 +88,7 @@ function applyDeviceOrientation() {
 }
 
 function recenter() {
+  preferLandscape();
   deviceQuaternionInto(qDevice);
   qRefInv.copy(qDevice).invert();
   applyDeviceOrientation();
@@ -99,6 +112,7 @@ function needsOrientationPermission() {
 
 async function enableOrientation() {
   try {
+    await preferLandscape();
     if (needsOrientationPermission()) {
       const state = await DeviceOrientationEvent.requestPermission();
       if (state !== 'granted') return;
