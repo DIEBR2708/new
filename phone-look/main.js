@@ -3,10 +3,10 @@ import * as THREE from 'three';
 const WORLD = 900;
 const SEGMENTS = 160;
 const MIN_ALT = 8;
-const MAX_SPEED = 42;
-const ACCEL = 55;
-const VERT_ACCEL = 38;
-const DRAG = 1.6;
+// ~consumer-drone cruise (m/s class): fast, not jet-like; accel ramps to top speed
+const MAX_SPEED = 16;
+const ACCEL = 12;
+const DRAG = 1.85;
 
 const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x7eb6d9);
@@ -327,11 +327,10 @@ if (needsOrientationPermission()) {
   window.addEventListener('deviceorientation', onDeviceOrientation, true);
 }
 
-// --- flight sticks ---------------------------------------------------------------
+// --- flight stick (single move stick; climb/descend via look pitch) --------------
 const moveInput = { x: 0, y: 0 };
-const vertInput = { x: 0, y: 0 };
 
-function bindStick(el, state, axes = 'xy') {
+function bindStick(el, state) {
   const knob = el.querySelector('.stick-knob');
   const radius = 34;
   let activeId = null;
@@ -350,15 +349,9 @@ function bindStick(el, state, axes = 'xy') {
     const clamped = Math.min(len, radius);
     dx = (dx / len) * clamped;
     dy = (dy / len) * clamped;
-    if (axes === 'xy') {
-      state.x = dx / radius;
-      state.y = -dy / radius;
-      setKnob(dx, dy);
-    } else {
-      state.x = 0;
-      state.y = -dy / radius;
-      setKnob(0, dy);
-    }
+    state.x = dx / radius;
+    state.y = -dy / radius;
+    setKnob(dx, dy);
   }
 
   function clear() {
@@ -385,8 +378,7 @@ function bindStick(el, state, axes = 'xy') {
   el.addEventListener('pointercancel', clear);
 }
 
-bindStick(document.getElementById('stick-move'), moveInput, 'xy');
-bindStick(document.getElementById('stick-vert'), vertInput, 'y');
+bindStick(document.getElementById('stick-move'), moveInput);
 
 // --- drone state -----------------------------------------------------------------
 const velocity = new THREE.Vector3();
@@ -417,30 +409,20 @@ function animate(now) {
   // Move relative to current look (device orientation = drone attitude)
   camera.getWorldDirection(forward);
   right.crossVectors(forward, camera.up).normalize();
-  // Keep horizontal movement on the ground plane for stick X/Y comfort
-  const fwdFlat = forward.clone().setY(0);
-  if (fwdFlat.lengthSq() > 1e-6) fwdFlat.normalize();
-  else fwdFlat.set(0, 0, -1);
+  // Strafe stays horizontal; forward uses full look vector (pitch climbs/descends)
   const rightFlat = right.clone().setY(0);
   if (rightFlat.lengthSq() > 1e-6) rightFlat.normalize();
   else rightFlat.set(1, 0, 0);
 
   wish.set(0, 0, 0);
-  wish.addScaledVector(fwdFlat, moveInput.y);
+  wish.addScaledVector(forward, moveInput.y);
   wish.addScaledVector(rightFlat, moveInput.x);
   if (wish.lengthSq() > 1) wish.normalize();
 
-  velocity.x += wish.x * ACCEL * dt;
-  velocity.z += wish.z * ACCEL * dt;
-  velocity.y += vertInput.y * VERT_ACCEL * dt;
-
-  // Light gravity bias when stick released vertically keeps hover soft, not sinky
-  if (Math.abs(vertInput.y) < 0.05) velocity.y *= Math.exp(-DRAG * 0.55 * dt);
+  velocity.addScaledVector(wish, ACCEL * dt);
 
   const damp = Math.exp(-DRAG * dt);
-  velocity.x *= damp;
-  velocity.z *= damp;
-  velocity.y *= Math.exp(-DRAG * 0.85 * dt);
+  velocity.multiplyScalar(damp);
 
   const speed = velocity.length();
   if (speed > MAX_SPEED) velocity.multiplyScalar(MAX_SPEED / speed);
