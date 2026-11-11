@@ -11,12 +11,13 @@
       margin: 0;
       height: 100%;
       overflow: hidden;
-      background: #111;
+      background: #0b1520;
       touch-action: none;
+      user-select: none;
+      -webkit-user-select: none;
     }
     canvas { display: block; width: 100%; height: 100%; }
 
-    /* Landscape-first chrome: right-edge thumb reach when phone is held sideways */
     #recenter {
       position: fixed;
       right: max(16px, env(safe-area-inset-right));
@@ -32,7 +33,6 @@
       cursor: pointer;
     }
 
-    /* Wide horizontal enable affordance for landscape hold */
     #enable {
       position: fixed;
       left: max(24px, env(safe-area-inset-left));
@@ -53,8 +53,36 @@
       padding: 0 24px;
     }
 
+    .stick {
+      position: fixed;
+      z-index: 1;
+      width: 112px;
+      height: 112px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.18);
+      bottom: max(18px, env(safe-area-inset-bottom));
+      touch-action: none;
+    }
+    #stick-move {
+      left: max(18px, env(safe-area-inset-left));
+    }
+    #stick-vert {
+      right: max(18px, env(safe-area-inset-right));
+    }
+    .stick-knob {
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      width: 44px;
+      height: 44px;
+      margin: -22px 0 0 -22px;
+      border-radius: 50%;
+      background: rgba(255, 255, 255, 0.28);
+      pointer-events: none;
+    }
+
     @media (orientation: portrait) {
-      /* Still prefer landscape chrome; keep controls usable until lock/rotate */
       #enable {
         left: 12%;
         right: 12%;
@@ -69,6 +97,8 @@
 <body>
   <button id="enable" type="button">Tap to enable motion</button>
   <button id="recenter" type="button">Recenter</button>
+  <div id="stick-move" class="stick" aria-label="Move"><div class="stick-knob"></div></div>
+  <div id="stick-vert" class="stick" aria-label="Climb"><div class="stick-knob"></div></div>
   <script type="importmap">
   {
     "imports": {
